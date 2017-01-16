@@ -1,0 +1,1120 @@
+<html>
+	<head>
+		<!-- Load the d3 library. -->
+		<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+		<script src="http://d3js.org/topojson.v1.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="style/style.css"> </link>
+		<style>
+		svg { 
+			background-color: #fff;
+			border-color: #d3d3d3;
+			border-width: 2px;
+		}
+		.all-content {
+			text-align: center;
+			margin: 20px;
+			position: absolute;
+			margin-top: 200px;
+		}
+		.tick text {
+			font-size: small;
+		}
+		.x-axis, .y-axis path {
+			stroke-width: 0px;
+		}
+
+		.y-axis line{
+			stroke: #d3d3d3;
+			stroke-width: 2px;
+		}
+		h5 {
+			margin: 1px;
+		}
+		#school-lists{
+			width: 100%;
+		}
+		#school-list-public, #school-list-private{
+			text-align: left;
+			font-size: 12px;
+			font-family: sans-serif;
+			padding-bottom: 0.5%;
+			width: 100%;
+			
+			-webkit-column-count: 5; /*for Safari,Chrome, Opera*/
+			-moz-column-count: 5; /*for Mozilla*/
+			column-count: 5;
+		}
+		#listHeader{
+			float: left;
+			width: 100%;
+		}
+		h4{
+			text-align: left;
+			font-size: 14px;
+			font-family: sans-serif;
+		}
+		.histo_barsR, .histo_barsL{
+			fill-opacity: 0.8;
+		}
+		</style>
+	</head>
+	<body>
+		<div class="header">
+			<h1 id = "header-font">Cost of Attendance vs. Post Graduation Debt of Top 50 Private & Public Colleges in the United States</h1>
+			<p class="htext"> Student Loans and the debt associated with excessive loans is a pressing and pertinent issue for college students.
+			In the following graphical models, we pose certain possible correlations between Student Debt (post graduation) with the cost of the institution attended. In both situations, we compare the top 50 private and top 50 public schools of 2013 in the United States according to U.S. News and World Rankings. </p>
+		</div>
+		<br>
+		<br>
+
+		<div class="all-content">
+			<div class="graphic_header"> 
+				<p class="graph_header_h1">List of All Colleges Represented in the Visualization</p>
+			</div>
+
+			<!-- List of schools div -->
+			<div class="school-lists">
+				<div class="listHeader"><h4>Public Schools</h4><div id="school-list-public"></div>
+				<div class="listHeader"><h4>Private Schools</h4><div id="school-list-private"></div>
+			</div>
+
+			<div class="graphic_header"> 
+				<p class="graph_header_h1">Mapping the Colleges Based on Region</p>
+			</div>
+
+			<!-- Map div -->
+			<div class="map-row">
+				<svg id="map" height="600" width="1200"></svg>
+			</div>
+
+			<div class="graphic_header"> 
+				<p class="graph_header_h1">Plotting the Colleges Based on Cost of Attendance vs. Cumulative Median Debt</p>
+			</div>
+
+			<!-- Large scatterplot div -->
+			<div class="scatterplot">
+				<br>
+				<br>
+				<svg id="svg" height="600" width="1200"></svg>
+			</div>
+
+			<!--Family Income-->
+			<div class="graphic_header"> 
+				<p class="graph_header_h1">Average Percentage of Enrolled Students by Family Income Bracket</p>
+			</div>
+
+			<div id="fam_income"> 
+				<svg id="fam_histogram" height="500" width="1250"></svg>
+			</div>
+
+			<!-- Three small scatterplot div -->
+			<div class="graphic_header"> 
+				<p class="graph_header_h1">Creating Subplots Based on the Percentage of Financial Aid Provided</p>
+			</div>
+
+			<div class="plot-row">
+				<svg id="svg1" height="350" width="400"></svg>
+				<svg id="svg2" height="350" width="400"></svg>
+				<svg id="svg3" height="350" width="400"></svg>
+			</div>
+
+		</div>
+
+		<!-- Script for big scatterplot -->
+		<script>
+			var svgLargePlot = d3.select("#svg")
+
+			var xScale = d3.scale.linear().domain([0,70000]).range([70,1180]);
+			var yScale = d3.scale.linear().domain([0,30000]).range([550, 40]);
+
+			// School Colors
+			var pubColor = "#009999";
+			var privColor = "#FF7400";
+
+			// Map Colors
+			var wColor = "#3BAE43";
+			var sColor = "#DD4F4B";
+			var neColor = "#543F98";
+			var mwColor = "#FFFF00";
+
+			var xAxis = d3.svg.axis()
+				.scale(xScale)
+				.orient("bottom")
+				.tickSize(2,2)
+				.ticks(7)
+				.outerTickSize(0);
+
+			svgLargePlot.append("g").attr("class", "x-axis")
+				.attr("transform", "translate(0, 550)")
+				.call(xAxis);
+
+			var yAxis = d3.svg.axis()
+				.scale(yScale)
+				.orient("left")
+				.tickSize(2,2)
+				.ticks(12)
+				.innerTickSize(-1200)
+			    .outerTickSize(0)
+			    .tickPadding(5);
+
+			svgLargePlot.append("g").attr("class", "y-axis")
+				.attr("transform", "translate(70, 0)")
+				.call(yAxis)
+				//.selectAll("path");
+
+			svgLargePlot.append("text")
+				.attr("x", svgLargePlot.attr("width")/2)
+				.attr("y", 585)
+				.attr("alignment-baseline", "middle")
+				.attr("text-anchor", "middle")
+				.text("Cost of Attendance per Year (Dollars)");
+
+			svgLargePlot.append("text")
+				.attr("x", -100)
+				.attr("y", svgLargePlot.attr("height")/2 + 5)
+				.attr("alignment-baseline", "middle")
+				.attr("text-anchor", "middle")
+				.attr("transform","rotate(270 30,30) translate(-100,-295)")
+				.text("Cumulative Median Debt (Dollars)");
+
+			//Private vs. Public Legend
+			svgLargePlot.append("rect")
+				.attr("class","rect")
+				.attr("x", 1060)
+				.attr("y", 0)
+				.attr("width", 15)
+				.attr("height", 15)
+				.attr("fill", "#FF7400")
+
+			svgLargePlot.append("text")
+				.attr("class","text")
+				.attr("x", 1080)
+				.attr("y", 12)
+				.text("Private");
+
+			svgLargePlot.append("rect")
+				.attr("class","rect")
+				.attr("x", 1140)
+				.attr("y", 0)
+				.attr("width", 15)
+				.attr("height", 15)
+				.attr("fill", "#009999")
+
+			svgLargePlot.append("text")
+				.attr("class","text")
+				.attr("x", 1160)
+				.attr("y", 12)
+				.text("Public");
+
+			var SVGList = ["#svg1","#svg2","#svg3"];
+			var widthSmall = 600;
+
+			// Building small scatterplots
+			for (var i=0; i < SVGList.length; i++) {
+				var svgSmall = d3.select(SVGList[i])
+
+				var xScaleSmall = d3.scale.linear().domain([0,60000]).range([50, 300]);
+				var yScaleSmall = d3.scale.linear().domain([0,30000]).range([300, 50]);
+
+				var xAxisSmall = d3.svg.axis()
+					.scale(xScaleSmall)
+					.orient("bottom")
+					.tickSize(2,2)
+					.ticks(3)
+					.outerTickSize(0);
+
+				svgSmall.append("g").attr("class", "x-axis")
+					.attr("transform", "translate(50, 300)")
+					.call(xAxisSmall);
+
+				var yAxisSmall = d3.svg.axis()
+					.scale(yScaleSmall)
+					.orient("left")
+					.tickSize(2,2)
+					.ticks(12)
+					.innerTickSize(-widthSmall)
+					.outerTickSize(0);
+
+				svgSmall.append("g").attr("class", "y-axis")
+					.attr("transform", "translate(100, 0)")
+					.call(yAxisSmall)
+
+				svgSmall.append("text")
+					.attr("x", -110)
+					.attr("y", -70)
+					.attr("alignment-baseline", "middle")
+					.attr("text-anchor", "middle")
+					.attr("transform","rotate(270 30,30) translate(0,100)")
+					.text("Cumulative Median Debt (Dollars)");
+
+				svgSmall.append("text")
+					.attr("x", svgSmall.attr("width")/2 + 50)
+					.attr("y", 340)
+					.attr("alignment-baseline", "middle")
+					.attr("text-anchor", "middle")
+					.text("Cost of Attendance per Year (Dollars)");
+
+				if (SVGList[i] == "#svg1") {
+
+					svgSmall.append("text")
+						.attr("x", svgSmall.attr("width")/2 + 40)
+						.attr("y", 20)
+						.attr("alignment-baseline", "middle")
+						.attr("text-anchor", "middle")
+						.text("Group A (0-33% Financial Aid)");						
+				}
+
+				if (SVGList[i] == "#svg2") {
+					svgSmall.append("text")
+						.attr("x", svgSmall.attr("width")/2 + 40)
+						.attr("y", 20)
+						.attr("alignment-baseline", "middle")
+						.attr("text-anchor", "middle")
+						.text("Group B (33-50% Financial Aid)");
+				}
+
+				if (SVGList[i] == "#svg3") {
+					svgSmall.append("text")
+						.attr("x", svgSmall.attr("width")/2 + 40)
+						.attr("y", 20)
+						.attr("alignment-baseline", "middle")
+						.attr("text-anchor", "middle")
+						.text("Group C (50%+ Financial Aid)");
+				}
+			};
+
+			// Map building goes below
+			var width = 1200,
+			    height = 600;
+
+			var projection = d3.geo.albersUsa();
+
+			var path = d3.geo.path().projection(projection);
+				
+			var svgMap = d3.select("#map");
+
+			// Add rectangles and lines to SVGMap
+			svgMap.append("rect")
+				.attr("x", "20")
+				.attr("y", "375")
+				.attr("height", "45")
+				.attr("width", "260")
+				.attr("rx", "10")
+				.attr("ry", "10")
+				.attr("fill-opacity", "0.1")
+				.attr("fill", wColor)
+				.attr("stroke", wColor)
+				.attr("stroke-width", 2);
+
+			svgMap.append("line")
+				.attr("x1", "150")
+				.attr("x2", "230")
+				.attr("y1", "375")
+				.attr("y2", "300")
+				.attr("stroke", wColor)
+				.attr("stroke-width", 3);
+
+			svgMap.append("rect")
+				.attr("x", "565")
+				.attr("y", "548")
+				.attr("height", "50")
+				.attr("width", "270")
+				.attr("rx", "10")
+				.attr("ry", "10")
+				.attr("fill-opacity", "0.1")
+				.attr("fill", sColor)
+				.attr("stroke", sColor)
+				.attr("stroke-width", 2);
+
+			svgMap.append("line")
+				.attr("x1", "700")
+				.attr("x2", "680")
+				.attr("y1", "548")
+				.attr("y2", "450")
+				.attr("stroke", sColor)
+				.attr("stroke-width", 3);
+
+			svgMap.append("rect")
+				.attr("x", "905")
+				.attr("y", "285")
+				.attr("height", "50")
+				.attr("width", "290")
+				.attr("rx", "10")
+				.attr("ry", "10")
+				.attr("fill-opacity", "0.1")
+				.attr("fill", neColor)
+				.attr("stroke", neColor)
+				.attr("stroke-width", 2);
+
+			svgMap.append("line")
+				.attr("x1", "1050")
+				.attr("x2", "900")
+				.attr("y1", "285")
+				.attr("y2", "230")
+				.attr("stroke", neColor)
+				.attr("stroke-width", 3);
+
+			svgMap.append("rect")
+				.attr("x", "510")
+				.attr("y", "25")
+				.attr("height", "50")
+				.attr("width", "280")
+				.attr("rx", "10")
+				.attr("ry", "10")
+				.attr("fill-opacity", "0.1")
+				.attr("fill", mwColor)
+				.attr("stroke", mwColor)
+				.attr("stroke-width", 2);
+
+			svgMap.append("line")
+				.attr("x1", "650")
+				.attr("x2", "630")
+				.attr("y1", "75")
+				.attr("y2", "110")
+				.attr("stroke", mwColor)
+				.attr("stroke-width", 3);
+
+			// Map Legend
+			svgMap.append("rect")
+				.attr("class","rect")
+				.attr("x", 20)
+				.attr("y", 0)
+				.attr("width", 15)
+				.attr("height", 15)
+				.attr("fill", wColor)
+
+			svgMap.append("text")
+				.attr("class","text")
+				.attr("x", 40)
+				.attr("y", 12)
+				.text("West Region");
+
+			svgMap.append("rect")
+				.attr("class","rect")
+				.attr("x", 20)
+				.attr("y", 30)
+				.attr("width", 15)
+				.attr("height", 15)
+				.attr("fill", mwColor)
+
+			svgMap.append("text")
+				.attr("class","text")
+				.attr("x", 40)
+				.attr("y", 42)
+				.text("Midwest Region");
+
+			svgMap.append("rect")
+				.attr("class","rect")
+				.attr("x", 20)
+				.attr("y", 60)
+				.attr("width", 15)
+				.attr("height", 15)
+				.attr("fill", neColor)
+
+			svgMap.append("text")
+				.attr("class","text")
+				.attr("x", 40)
+				.attr("y", 72)
+				.text("Northeast Region");
+
+			svgMap.append("rect")
+				.attr("class","rect")
+				.attr("x", 20)
+				.attr("y", 90)
+				.attr("width", 15)
+				.attr("height", 15)
+				.attr("fill", sColor)
+
+			svgMap.append("text")
+				.attr("class","text")
+				.attr("x", 40)
+				.attr("y", 102)
+				.text("South Region");
+
+			var states;
+
+			var statesW = [], statesNE = [], statesS = [], statesMW = [];
+			var statesAbrvW = [], statesAbrvNE = [], statesAbrvS = [], statesAbrvMW =[];
+
+			d3.csv("states.csv", function (statesCSV) {
+				statesCSV.forEach(function (stateRow) {
+					if (stateRow["REGION"] == "W") {
+						var stateID = stateRow["ID"];
+						statesW.push(stateID);
+						var stateAB = stateRow["ABRV"];
+						statesAbrvW.push(stateAB);
+					}
+					else if (stateRow["REGION"] == "S") {
+						var stateID = stateRow["ID"];
+						statesS.push(stateID);
+						var stateAB = stateRow["ABRV"];
+						statesAbrvS.push(stateAB);
+					}
+					else if (stateRow["REGION"] == "NE") {
+						var stateID = stateRow["ID"];
+						statesNE.push(stateID);
+						var stateAB = stateRow["ABRV"];
+						statesAbrvNE.push(stateAB);
+					}
+					else if (stateRow["REGION"] == "MW") {
+						var stateID = stateRow["ID"];
+						statesMW.push(stateID);
+						var stateAB = stateRow["ABRV"];
+						statesAbrvMW.push(stateAB);
+					}
+				})
+
+				d3.json("us.json", function(error, shapes) {
+					states = topojson.feature(shapes, shapes.objects.states).features;
+
+					var statePaths = svgMap.append("g");
+					statePaths.selectAll("path").data(states).enter()
+						.append("path").attr("d", path)
+						.attr("transform", "translate(110, 40)")
+						.style("stroke", "#ccc")
+						.style("fill", function (state) {
+							if (statesW.indexOf(state.id.toString()) != -1) {
+								return wColor;
+							}
+							else if (statesS.indexOf(state.id.toString()) != -1) {
+								return sColor;
+							}
+							else if (statesNE.indexOf(state.id.toString()) != -1) {
+								return neColor;
+							}
+							else if (statesMW.indexOf(state.id.toString()) != -1) {
+								return mwColor;
+							}
+						});	
+
+					// Public school data
+					d3.csv("pub_school_top50.csv", function(data) {
+						var countPubW = 0, countPubS = 0, countPubNE = 0, countPubMW = 0;
+						var totalDebtPubW = 0, totalDebtPubS = 0, totalDebtPubNE = 0, totalDebtPubMW = 0;
+
+						data.forEach(function (row) {
+							var schoolSizeVal = row["UGDS"];
+							var radiusVal = 0;
+							var height = 0;
+							var width = 0;
+
+							if (statesAbrvW.indexOf(row["STABBR"]) != -1) {
+								countPubW ++;
+								totalDebtPubW += Number(row["DEBT_MDN"]);
+							}
+							else if (statesAbrvS.indexOf(row["STABBR"]) != -1) {
+								countPubS ++;
+								totalDebtPubS += Number(row["DEBT_MDN"]);
+							}
+							else if (statesAbrvNE.indexOf(row["STABBR"]) != -1) {
+								countPubNE ++;
+								totalDebtPubNE += Number(row["DEBT_MDN"]);
+							}
+							else if (statesAbrvMW.indexOf(row["STABBR"]) != -1) {
+								countPubMW ++;
+								totalDebtPubMW += Number(row["DEBT_MDN"]);						
+							}
+
+							// Add location to map
+							var latitude = row["LATITUDE"];
+							var longitude = row["LONGITUDE"];
+							var cords = projection([longitude, latitude]);
+
+							if (schoolSizeVal >= 15000) {
+								radiusVal = 8;
+								height = 15;
+								width = 15;
+							}
+							else if (schoolSizeVal < 15000 && schoolSizeVal >= 5000) {
+								radiusVal = 6;
+								height = 10;
+								width = 10;
+							}
+							else if (schoolSizeVal < 5000) {
+								radiusVal = 4;
+								height = 5;
+								width = 5;
+							}
+
+							var textareaPub = d3.select("#school-list-public");
+
+							textareaPub.append("h5")
+								.text(row["INSTNM"])
+								.style("color", pubColor)
+								.append("br");
+
+							svgLargePlot.append("circle")
+								.attr("cx", xScale(row["COSTT4_A"]))
+								.attr("cy", yScale(row["DEBT_MDN"]))
+								.attr("r", radiusVal)
+								.attr("stroke", "black")
+								.attr("fill", "#009999")
+								.attr("fill-opacity", .4);
+
+							if (row["PCTFLOAN"] <= 0.33) {
+
+								var svgScatter = d3.select("#svg1");
+
+								svgScatter.append("circle")
+									.attr("cx", xScaleSmall(row["COSTT4_A"]) + 50)
+									.attr("cy", yScaleSmall(row["DEBT_MDN"]))
+									.attr("r", radiusVal)
+									.attr("stroke", "black")
+									.attr("fill", pubColor)
+									.attr("fill-opacity", .4);
+
+								if (cords != null) {
+									svgMap.append("circle")
+										.attr("cx", cords[0])
+										.attr("cy", cords[1])
+										.attr("r", radiusVal)
+										.attr("transform", "translate(110, 40)")
+										.attr("stroke", "black")
+										.attr("fill", pubColor)
+										.attr("fill-opacity", .4);
+								}
+							}
+							if (row["PCTFLOAN"] <= 0.5 && row["PCTFLOAN"] > 0.33) {
+
+								var svgScatter = d3.select("#svg2");
+
+								svgScatter.append("circle")
+									.attr("cx", xScaleSmall(row["COSTT4_A"]) + 50)
+									.attr("cy", yScaleSmall(row["DEBT_MDN"]))
+									.attr("r", radiusVal)
+									.attr("fill", pubColor)
+									.attr("stroke", "black")
+									.attr("fill-opacity", .4);
+
+								if (cords != null) {
+									svgMap.append("circle")
+										.attr("cx", cords[0])
+										.attr("cy", cords[1])
+										.attr("r", radiusVal)
+										.attr("transform", "translate(110, 40)")
+										.attr("stroke", "black")
+										.attr("fill", pubColor)
+										.attr("fill-opacity", .4);
+								}
+							}
+							if (row["PCTFLOAN"] > 0.5) {
+								var svgScatter = d3.select("#svg3");
+
+								svgScatter.append("circle")
+									.attr("cx", xScaleSmall(row["COSTT4_A"]) + 50)
+									.attr("cy", yScaleSmall(row["DEBT_MDN"]))
+									.attr("r", radiusVal)
+									.attr("stroke", "black")
+									.attr("fill", pubColor)
+									.attr("fill-opacity", .4);
+
+								if (cords != null) {
+									svgMap.append("circle")
+										.attr("cx", cords[0])
+										.attr("cy", cords[1])
+										.attr("r", radiusVal)
+										.attr("transform", "translate(110, 40)")
+										.attr("stroke", "black")
+										.attr("fill", pubColor)
+										.attr("fill-opacity", .4);
+								}
+							}
+						})
+						// Calculate the average debts
+						var avgDebtPubW = (totalDebtPubW/countPubW);
+						var avgDebtPubS = (totalDebtPubS / countPubS);
+						var avgDebtPubNE = (totalDebtPubNE / countPubNE);
+						var avgDebtPubMW = (totalDebtPubMW / countPubMW);
+
+						svgMap.append("text")
+							.attr("x", 150)
+							.attr("y", 388)
+							.attr("alignment-baseline", "middle")
+							.attr("text-anchor", "middle")
+							.attr("fill", pubColor)
+							.text("Avg. Debt for Public Schools in West: $" + Math.floor(avgDebtPubW));
+
+						svgMap.append("text")
+							.attr("x", 700)
+							.attr("y", 565)
+							.attr("alignment-baseline", "middle")
+							.attr("text-anchor", "middle")
+							.attr("fill", pubColor)
+							.text("Avg. Debt for Public Schools in South: $" + Math.floor(avgDebtPubS));
+
+						svgMap.append("text")
+							.attr("x", 1050)
+							.attr("y", 300)
+							.attr("alignment-baseline", "middle")
+							.attr("text-anchor", "middle")
+							.attr("fill", pubColor)
+							.text("Avg. Debt for Public Schools in Northeast: $" + Math.floor(avgDebtPubNE));
+
+						svgMap.append("text")
+							.attr("x", 650)
+							.attr("y", 40)
+							.attr("alignment-baseline", "middle")
+							.attr("text-anchor", "middle")
+							.attr("fill", pubColor)
+							.text("Avg. Debt for Public Schools in Midwest: $" + Math.floor(avgDebtPubMW));
+					});
+		
+					// Private school date
+					d3.csv("private_school_top50.csv", function(data) {
+						var countPrivW = 0, countPrivS = 0, countPrivNE = 0, countPrivMW = 0;
+						var totalDebtPrivW = 0, totalDebtPrivS = 0, totalDebtPrivNE = 0, totalDebtPrivMW = 0;
+
+						data.forEach(function (row) {
+							var schoolSizeVal = row["UGDS"];
+							var radiusVal = 0;
+							var height = 0;
+							var width = 0;
+
+							if (statesAbrvW.indexOf(row["STABBR"]) != -1) {
+								countPrivW ++;
+								totalDebtPrivW += Number(row["DEBT_MDN"]);
+							}
+							else if (statesAbrvS.indexOf(row["STABBR"]) != -1) {
+								countPrivS ++;
+								totalDebtPrivS += Number(row["DEBT_MDN"]);
+							}
+							else if (statesAbrvNE.indexOf(row["STABBR"]) != -1) {
+								countPrivNE ++;
+								totalDebtPrivNE += Number(row["DEBT_MDN"]);
+							}
+							else if (statesAbrvMW.indexOf(row["STABBR"]) != -1) {
+								countPrivMW ++;
+								totalDebtPrivMW += Number(row["DEBT_MDN"]);						
+							}
+
+							// Add location to map
+							var latitude = row["LATITUDE"];
+							var longitude = row["LONGITUDE"];
+							var cords = projection([longitude, latitude]);
+
+							if (schoolSizeVal >= 15000) {
+								radiusVal = 8;
+								height = 15;
+								width = 15;
+							}
+							else if (schoolSizeVal < 15000 && schoolSizeVal >= 5000) {
+								radiusVal = 6;
+								height = 10;
+								width = 10;
+							}
+							else if (schoolSizeVal < 5000) {
+								radiusVal = 4;
+								height = 5;
+								width = 5;
+							}
+
+							var textareaPriv = d3.select("#school-list-private");
+
+							textareaPriv.append("h5")
+								.text(row["INSTNM"])
+								.style("color", privColor)
+								.append("br");
+
+							// Append points to large plot
+							svgLargePlot.append("circle")
+								.attr("cx", xScale(row["COSTT4_A"]))
+								.attr("cy", yScale(row["DEBT_MDN"]))
+								.attr("r", radiusVal)
+								.attr("stroke", "black")
+								.attr("fill", "#FF7400")
+								.attr("fill-opacity", .4);
+
+							if (row["PCTFLOAN"] <= 0.33) {
+
+								var svgScatter = d3.select("#svg1");
+
+								svgScatter.append("circle")
+									.attr("cx", xScaleSmall(row["COSTT4_A"]) + 50)
+									.attr("cy", yScaleSmall(row["DEBT_MDN"]))
+									.attr("r", radiusVal)
+									.attr("stroke", "black")
+									.attr("fill", privColor)
+									.attr("fill-opacity", .4);
+
+								if (cords != null) {
+									svgMap.append("circle")
+										.attr("cx", cords[0])
+										.attr("cy", cords[1])
+										.attr("r", radiusVal)
+										.attr("transform", "translate(110, 40)")
+										.attr("stroke", "black")
+										.attr("fill", privColor)
+										.attr("fill-opacity", .4);
+								}
+							}
+							if (row["PCTFLOAN"] <= 0.5 && row["PCTFLOAN"] > 0.33) {
+
+								var svgScatter = d3.select("#svg2");
+
+								svgScatter.append("circle")
+									.attr("cx", xScaleSmall(row["COSTT4_A"]) + 50)
+									.attr("cy", yScaleSmall(row["DEBT_MDN"]))
+									.attr("r", radiusVal)
+									.attr("stroke", "black")
+									.attr("fill", privColor)
+									.attr("fill-opacity", .4);
+
+								if (cords != null) {
+									svgMap.append("circle")
+										.attr("cx", cords[0])
+										.attr("cy", cords[1])
+										.attr("r", radiusVal)
+										.attr("transform", "translate(110, 40)")
+										.attr("stroke", "black")
+										.attr("fill", privColor)
+										.attr("fill-opacity", .4);
+								}
+							}
+							if (row["PCTFLOAN"] > 0.5) {
+
+								var svgScatter = d3.select("#svg3");
+
+								svgScatter.append("circle")
+									.attr("cx", xScaleSmall(row["COSTT4_A"]) + 50)
+									.attr("cy", yScaleSmall(row["DEBT_MDN"]))
+									.attr("r", radiusVal)
+									.attr("stroke", "black")
+									.attr("fill", privColor)
+									.attr("fill-opacity", .4);
+
+								if (cords != null) {
+									svgMap.append("circle")
+										.attr("cx", cords[0])
+										.attr("cy", cords[1])
+										.attr("r", radiusVal)
+										.attr("transform", "translate(110, 40)")
+										.attr("stroke", "black")
+										.attr("fill", privColor)
+										.attr("fill-opacity", .4);
+								}
+							}
+						})
+						// Calculate the average debts
+						var avgDebtPrivW = (totalDebtPrivW / countPrivW);
+						var avgDebtPrivS = (totalDebtPrivS / countPrivS);
+						var avgDebtPrivNE = (totalDebtPrivNE / countPrivNE);
+						var avgDebtPrivMW = (totalDebtPrivMW / countPrivMW);
+
+						svgMap.append("text")
+							.attr("x", 150)
+							.attr("y", 408)
+							.attr("alignment-baseline", "middle")
+							.attr("text-anchor", "middle")
+							.attr("fill", privColor)
+							.text("Avg. Debt for Private Schools in West: $" + Math.floor(avgDebtPrivW));
+
+						svgMap.append("text")
+							.attr("x", 700)
+							.attr("y", 585)
+							.attr("alignment-baseline", "middle")
+							.attr("text-anchor", "middle")
+							.attr("fill", privColor)
+							.text("Avg. Debt for Private Schools in South: $" + Math.floor(avgDebtPrivS));
+
+						svgMap.append("text")
+							.attr("x", 1050)
+							.attr("y", 320)
+							.attr("alignment-baseline", "middle")
+							.attr("text-anchor", "middle")
+							.attr("fill", privColor)
+							.text("Avg. Debt for Private Schools in Northeast: $" + Math.floor(avgDebtPrivNE));
+
+						console.log(privColor);
+						svgMap.append("text")
+							.attr("x", 650)
+							.attr("y", 60)
+							.attr("alignment-baseline", "middle")
+							.attr("text-anchor", "middle")
+							.attr("fill", privColor)
+							.text("Avg. Debt for Private Schools in Midwest: $" + Math.floor(avgDebtPrivMW));
+					});			
+				});
+			});
+			
+			//Avg % Family Income Histogram Public
+			var pubLCount = 0;		//low income
+			var pubM1Count = 0;		//mid 1 income
+			var pubM2Count = 0;		//mid 2 income
+			var pubH1Count =0;		//high 1 income
+			var pubH2Count = 0;		//high 2 income
+			
+			var totalPubLow = 0;
+			var totalPubM1 = 0;
+			var totalPubM2 = 0;
+			var totalPubH1 = 0;
+			var totalPubH2 = 0;
+				
+			d3.csv("pub_school_top50.csv", function(data) {
+				
+				data.forEach(function(row){
+					if (row["INC_PCT_LO"] != "PrivacySuppressed") {
+                        pubLCount ++;
+						totalPubLow += Number(row["INC_PCT_LO"])*100;
+					    }
+					if (row["INC_PCT_M1"] != "PrivacySuppressed") {
+                        pubM1Count ++;
+						totalPubM1 += Number(row["INC_PCT_M1"])*100;
+					    }
+					if (row["INC_PCT_M2"] != "PrivacySuppressed") {
+                        pubM2Count ++;
+						totalPubM2 += Number(row["INC_PCT_M2"])*100;
+					    }
+					if (row["INC_PCT_H1"] != "PrivacySuppressed") {
+                        pubH1Count ++;
+						totalPubH1 += Number(row["INC_PCT_H1"])*100;
+					    }
+					if (row["INC_PCT_H2"] != "PrivacySuppressed") {
+                        pubH2Count ++;
+						totalPubH2 += Number(row["INC_PCT_H2"])*100;
+					    }
+				});
+			});
+				
+			//Avg % Family Income Histogram Private
+			d3.csv("private_school_top50.csv", function(data) {
+				
+				var privLCount = 0;		//low income
+				var privM1Count = 0;	//mid 1 income
+				var privM2Count = 0;	//mid 2 income
+				var privH1Count = 0;	//high 1 income
+				var privH2Count = 0;	//high 2 income
+				
+				var totalPrivLow = 0;
+				var totalPrivM1 = 0;
+				var totalPrivM2 = 0;
+				var totalPrivH1 = 0;
+				var totalPrivH2 = 0;
+			
+				data.forEach(function(row){
+				if (row["INC_PCT_LO"] != "PrivacySuppressed") {
+                        privLCount ++;
+						totalPrivLow += Number(row["INC_PCT_LO"])*100;
+                    }
+				if (row["INC_PCT_M1"] != "PrivacySuppressed") {
+                        privM1Count ++;
+						totalPrivM1 += Number(row["INC_PCT_M1"])*100;
+                    }
+				if (row["INC_PCT_M2"] != "PrivacySuppressed") {
+                        privM2Count ++;
+						totalPrivM2 += Number(row["INC_PCT_M2"])*100;
+                    }
+				if (row["INC_PCT_H1"] != "PrivacySuppressed") {
+                        privH1Count ++;
+						totalPrivH1 += Number(row["INC_PCT_H1"])*100;
+                    }
+				if (row["INC_PCT_H2"] != "PrivacySuppressed") {
+                        privH2Count ++;
+						totalPrivH2 += Number(row["INC_PCT_H2"])*100;
+                    }
+					
+				});
+				
+				//Histogram
+				var avg_fam_income = d3.select("#fam_histogram");
+
+				// Public rectangle
+				avg_fam_income.append("rect")
+					.attr("x", "50")
+					.attr("y", "250")
+					.attr("height", "250")
+					.attr("width", "600")
+					.attr("fill", pubColor)
+					.attr("fill-opacity", 0.3)
+
+				// Private rectangle
+				avg_fam_income.append("rect")
+					.attr("x", "650")
+					.attr("y", "10")
+					.attr("height", "250")
+					.attr("width", "600")
+					.attr("fill", privColor)
+					.attr("fill-opacity", 0.3)
+				
+				var incomeH = avg_fam_income.attr("height");
+				var incomeW = avg_fam_income.attr("width");
+				
+				var avgPubLo = totalPubLow/pubLCount;
+				var avgPubM1 = totalPubM1/pubM1Count;
+				var avgPubM2 = totalPubM2/pubM2Count;
+				var avgPubH1 = totalPubH1/pubH1Count;
+				var avgPubH2 = totalPubH2/pubH2Count;
+				
+				var pubAvgs  = [avgPubLo, avgPubM1, avgPubM2, avgPubH1, avgPubH2];
+
+				var avgPrivLo = totalPrivLow/pubLCount;
+				var avgPrivM1 = totalPrivM1/pubM1Count;
+				var avgPrivM2 = totalPrivM2/pubM2Count;
+				var avgPrivH1 = totalPrivH1/pubH1Count;
+				var avgPrivH2 = totalPrivH2/pubH2Count;
+				
+				var privAvgs = [avgPrivLo, avgPrivM1, avgPrivM2, avgPrivH1, avgPrivH2];
+
+				var bracketColors = ["#82f05f", "#14ccb9", "#a5b1d6", "#fb7287", "#d21e5b"];
+				
+				var fam_inc_braket = ["$0-$30,000", "$30,001-$48,000", "$48,001-$75,000", "$75,001-$110,00", "$110,00+"];
+				
+				var inc_xScalePriv  = d3.scale.linear().domain([0, d3.max(privAvgs)]).range([0, 500]);
+				
+				var inc_xScalePub  = d3.scale.linear().domain([0, d3.max(pubAvgs)]).range([0, 500]);
+				
+				var inc_yScale = d3.scale.linear().domain([0, 10]).range([450, 14]);
+				
+				var inc_yAxis = d3.svg.axis().scale(inc_yScale)
+							.orient("left")
+							.tickSize(2,3)
+							.ticks(0)
+							.innerTickSize(1);
+
+				avg_fam_income.append("g")
+						.attr("transform", "translate(" + 650 + ",21)")
+						.call(inc_yAxis);
+					
+				var inc_xAxis = d3.svg.axis().scale(inc_xScalePriv)
+							.orient("bottom")
+							.tickSize(0)
+							.ticks(0)
+							.innerTickSize(0);
+					
+				var inc_Axis2 = d3.svg.axis().scale(inc_xScalePub)
+							.orient("bottom")
+							.tickSize(1,1)
+							.ticks(0)
+							.innerTickSize(0);
+							
+				avg_fam_income.append("g")
+					.attr("transform", "translate(100, 450)")
+					.call(inc_xAxis);
+
+				//Avg % Family Income for Public Schools
+				avg_fam_income.append("g")
+					.selectAll("rect")
+					.attr("class", "histo_barsL")				
+					.data(pubAvgs)
+					.enter()
+					.append("rect")
+					.attr("x", function(pos){
+						return 647 - inc_xScalePub(pos);
+					})
+					.attr("height", 20)
+					.attr("width", function(d){
+						console.log(inc_xScalePub(d));
+						return inc_xScalePub(d);
+						})
+					
+					.attr("y", function(d, i){
+							console.log(inc_yScale(i));
+							return inc_yScale(i);
+						})
+					.attr("stroke-width", 1)
+					.attr("stroke", "black")
+					.style("fill", function(d, i){
+						return bracketColors[i];
+					});
+				
+				//Avg % Family Income for Private Schools
+				avg_fam_income.append("g")
+					.selectAll("rect")
+					.attr("class", "histo_barsR")				
+					.data(privAvgs)
+					.enter()
+					.append("rect")
+					.attr("x", 650)
+					.attr("height", 20)
+					.attr("width", function(d){
+						console.log(inc_xScalePriv(d));
+						return inc_xScalePriv(d);
+						})
+					.attr("y", function(d, i){
+							console.log(inc_yScale(i));
+							return inc_yScale(i) - 240;
+						})
+					.attr("stroke-width", 1)
+					.attr("stroke-width", 1)
+					.attr("stroke", "black")
+					.style("fill", function(d, i){
+						return bracketColors[i];
+					});
+				
+				//Axis Labels
+				avg_fam_income.append("text")
+					.attr("x", "0")
+					.attr("y", "0")
+					.attr("alignment-baseline", "middle")
+					.attr("transform", "translate(1180, 140) rotate(90)")
+					.attr("text-anchor", "middle")
+					.text("Private");
+
+				avg_fam_income.append("text")
+					.attr("x", "0")
+					.attr("y", "0")
+					.attr("alignment-baseline", "middle")
+					.attr("text-anchor", "middle")
+					.attr("transform", "translate(100, 375) rotate(270)")
+					.text("Public");
+					
+				//Histogram Text Private
+				avg_fam_income.selectAll("text.histo_barsR")
+					.data(privAvgs)
+					.enter()
+					.append("text")
+					.attr("x", 640)
+					.attr("y", function(d, i){
+							console.log(inc_yScale(i));
+							return inc_yScale(i) - 225;
+					})
+					.attr("text-anchor", "end")
+					.text(function(d){
+						return Math.floor(d) + "%";
+						})
+					.style("fill", "black");
+				
+				avg_fam_income.selectAll("text.histo_barsR")
+					.data(fam_inc_braket)
+					.enter()
+					.append("text")
+					.attr("x", 800)
+					.attr("y", function(d, i){
+							console.log(inc_yScale(i));
+							return inc_yScale(i) - 225;
+					})
+					.attr("text-anchor", "middle")
+					.text(function(d){return d;})
+					.style("fill", "black");
+					
+				//Histogram Text Public
+				avg_fam_income.selectAll("text.histo_barsL")
+					.data(pubAvgs)
+					.enter()
+					.append("text")
+					.attr("x", 685)
+					.attr("y", function(d, i){
+							console.log(inc_yScale(i));
+							return inc_yScale(i) + 15;
+					})
+					.attr("text-anchor", "end")
+					.text(function(d){
+						return Math.floor(d) + "%";
+						})
+					.style("fill", "black");
+					
+				avg_fam_income.selectAll("text.histo_barsL")
+					.data(fam_inc_braket)
+					.enter()
+					.append("text")
+					.attr("x", 550)
+					.attr("y", function(d, i){
+							console.log(inc_yScale(i));
+							return inc_yScale(i) + 15;
+					})
+					.attr("text-anchor", "middle")
+					.text(function(d){return d;})
+					.style("fill", "black");
+			});
+		</script>
+	</body>
+</html>
